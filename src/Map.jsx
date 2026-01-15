@@ -22,12 +22,13 @@ const ProjectsMap = () => {
     });
 
     mapRef.current = map;
-
+// add data and layers
     map.on('load', async () => {
       try {
         // 1️⃣ Load Links GeoJSON
         const resLinks = await fetch('/data/Links_Opt3.geojson');
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
+
         const linksData = await resLinks.json();
         setLinksGeoJSON(linksData);
 
