@@ -26,7 +26,7 @@ const ProjectsMap = () => {
     map.on('load', async () => {
       try {
         // 1️⃣ Load Links GeoJSON
-        const resLinks = await fetch('/data/Links_Opt3.geojson');
+        const resLinks = await fetch('data/Links_Opt3.geojson');
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
 
         const linksData = await resLinks.json();
@@ -45,7 +45,7 @@ const ProjectsMap = () => {
         });
 
         // 2️⃣ Load Node_AM.txt movements
-        const resMov = await fetch('/data/Node_AM.txt');
+        const resMov = await fetch('data/Node_AM.txt');
         if (!resMov.ok) throw new Error('Node_AM.txt not found');
         const text = await resMov.text();
         const rows = text.split('\n').slice(1); // skip header
@@ -312,7 +312,7 @@ const ProjectsMap = () => {
           for (const type of arrowTypes) {
             try {
               // Fetch the SVG file from the public folder
-              const response = await fetch(`/arrows/arrow-${type}.svg`);
+              const response = await fetch(`arrows/arrow-${type}.svg`);
               if (!response.ok) {
                 console.warn(`Could not load arrow-${type}.svg, using fallback`);
                 continue;
@@ -447,7 +447,7 @@ const ProjectsMap = () => {
         zIndex: 1
       }}>
         <img 
-          src="/data/Clarity_Logo_black.png" 
+          src="data/Clarity_Logo_black.png" 
           alt="Clarity Logo" 
           style={{ 
             width: '100%', 
