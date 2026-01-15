@@ -458,7 +458,7 @@ const ProjectsMap = () => {
           }} 
         />
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' ,borderBottom: '1px solid rgba(14, 10, 10, 1)'}}>
-          2036 Option 3 - Turning Movement Volumes
+          2036 Option 3 - Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
           Time Interval
