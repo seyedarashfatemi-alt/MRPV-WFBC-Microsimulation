@@ -461,7 +461,7 @@ const ProjectsMap = () => {
           2036 Option 3 - Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
-          Time Interval
+          Time Intervals
         </h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
