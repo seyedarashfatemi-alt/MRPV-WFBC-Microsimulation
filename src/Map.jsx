@@ -28,24 +28,29 @@ const ProjectsMap = () => {
 
     mapRef.current = map;
 
-    map.on('load', async () => {
+    map.on('load', () => {
       setMapLoaded(true);
     });
 
     return () => map.remove();
-  }, []); // Only run once on mount
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
     
     const map = mapRef.current;
     
-    // Clear existing data
     setSelectedMovements([]);
     setSelectedTimeInt('all');
     
     const loadData = async () => {
       try {
+        if (map.getLayer('movement-labels')) map.removeLayer('movement-labels');
+        if (map.getLayer('movement-arrowheads')) map.removeLayer('movement-arrowheads');
+        if (map.getLayer('movement-lines')) map.removeLayer('movement-lines');
+        if (map.getLayer('links-line')) map.removeLayer('links-line');
+        if (map.getSource('movements')) map.removeSource('movements');
+        if (map.getSource('links')) map.removeSource('links');
 
         const resLinks = await fetch('data/Links_Opt3.geojson');
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
@@ -70,7 +75,6 @@ const ProjectsMap = () => {
         const text = await resMov.text();
         const allRows = text.split('\n');
         
-        // Skip header row and filter out empty rows
         const rows = allRows.slice(1).filter(row => row.trim() && !row.includes('TIMEINT'));
 
         console.log(`📄 Total rows in ${fileName}:`, rows.length);
@@ -82,7 +86,6 @@ const ProjectsMap = () => {
           if (!row.trim()) return;
           const cols = row.split('\t');
           
-          // Skip if this looks like a header row
           if (cols[1] && cols[1].trim() === 'TIMEINT') return;
           
           if (cols.length < 7) return;
@@ -92,7 +95,6 @@ const ProjectsMap = () => {
           const toLink = cols[4].trim();
           const vehs = parseFloat(cols[5]) || 0;
           
-          // Skip if timeInt is not in the expected format (numbers with hyphen)
           if (!timeInt.match(/^\d+-\d+$/)) {
             console.warn('Skipping invalid time interval format:', timeInt);
             return;
@@ -263,10 +265,9 @@ const ProjectsMap = () => {
           const startSec = parseInt(parts[0]);
           const endSec = parseInt(parts[1]);
           
-          // Check for invalid data
           if (isNaN(startSec) || isNaN(endSec)) {
             console.warn('Invalid time interval:', interval);
-            return interval; // Return original if can't parse
+            return interval;
           }
           
           const hourOffset = timePeriod === 'AM' ? 4 : 13;
@@ -334,6 +335,8 @@ const ProjectsMap = () => {
           
           for (const type of arrowTypes) {
             try {
+              if (map.hasImage(`arrow-${type}`)) continue;
+              
               const response = await fetch(`arrows/arrow-${type}.svg`);
               if (!response.ok) {
                 console.warn(`Could not load arrow-${type}.svg, using fallback`);
@@ -413,6 +416,10 @@ const ProjectsMap = () => {
         
         setTimeout(() => {
           if (map.getLayer('movement-labels')) {
+            map.off('click', 'movement-labels');
+            map.off('mouseenter', 'movement-labels');
+            map.off('mouseleave', 'movement-labels');
+            
             map.on('click', 'movement-labels', (e) => {
               console.log('Label clicked!', e.features[0]);
               if (e.features.length > 0) {
@@ -470,14 +477,13 @@ const ProjectsMap = () => {
           }
         }, 500);
         
-        setMapLoaded(true);
       } catch (err) {
         console.error(err);
       }
-    });
-
-    return () => map.remove();
-  }, [timePeriod]);
+    };
+    
+    loadData();
+  }, [timePeriod, mapLoaded]);
 
   useEffect(() => {
     if (!mapRef.current || !allMovements) return;
@@ -858,7 +864,6 @@ const ProjectsMap = () => {
                         const startSec = parseInt(parts[0]);
                         const endSec = parseInt(parts[1]);
                         
-                        // Check for invalid data
                         if (isNaN(startSec) || isNaN(endSec)) {
                           console.warn('Invalid time interval in table:', interval);
                           return interval;
