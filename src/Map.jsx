@@ -570,7 +570,21 @@ const ProjectsMap = () => {
     
     const map = mapRef.current;
     
+    // Wait for style to be fully loaded before switching
+    if (!map.isStyleLoaded()) {
+      console.log('Style not loaded yet, waiting...');
+      map.once('idle', () => {
+        // Retry after map is idle
+        if (showBaseMap !== (map.getStyle().name !== undefined)) {
+          toggleBaseMap();
+        }
+      });
+      return;
+    }
+    
     console.log('Toggling base map:', showBaseMap);
+    
+    const toggleBaseMap = () => {
     
     const addCustomLayers = (useBlackLabels = false) => {
       const { links, movements } = customLayersDataRef.current;
@@ -762,39 +776,42 @@ const ProjectsMap = () => {
       }
     };
     
-    if (!showBaseMap) {
-      console.log('Switching to blank style...');
-      
-      const blankStyle = {
-        version: 8,
-        sources: {},
-        layers: [
-          {
-            id: 'background',
-            type: 'background',
-            paint: {
-              'background-color': '#ffffff'
+      if (!showBaseMap) {
+        console.log('Switching to blank style...');
+        
+        const blankStyle = {
+          version: 8,
+          sources: {},
+          layers: [
+            {
+              id: 'background',
+              type: 'background',
+              paint: {
+                'background-color': '#ffffff'
+              }
             }
-          }
-        ]
-      };
-      
-      map.setStyle(blankStyle);
-      
-      map.once('styledata', () => {
-        console.log('Blank style loaded, re-adding custom layers...');
-        addCustomLayers(true);
-      });
-      
-    } else {
-      console.log('Switching back to original style...');
-      map.setStyle(originalStyleRef.current);
-      
-      map.once('styledata', () => {
-        console.log('Original style loaded, re-adding custom layers...');
-        addCustomLayers(false);
-      });
-    }
+          ]
+        };
+        
+        map.setStyle(blankStyle);
+        
+        map.once('style.load', () => {
+          console.log('Blank style loaded, re-adding custom layers...');
+          addCustomLayers(true);
+        });
+        
+      } else {
+        console.log('Switching back to original style...');
+        map.setStyle(originalStyleRef.current);
+        
+        map.once('style.load', () => {
+          console.log('Original style loaded, re-adding custom layers...');
+          addCustomLayers(false);
+        });
+      }
+    };
+    
+    toggleBaseMap();
     
   }, [showBaseMap, mapLoaded]);
 
@@ -922,22 +939,17 @@ const ProjectsMap = () => {
         maxWidth: '300px',
         zIndex: 1
       }}>
-        <img 
-          src="/data/Clarity_Logo_black.png" 
-          alt="Clarity Logo" 
-          onError={(e) => {
-            console.log('Logo failed to load, hiding image');
-            e.target.style.display = 'none';
-          }}
-          style={{ 
-            width: '100%', 
-            maxWidth: '200px', 
-            marginBottom: '15px',
-            display: 'block',
-            borderBottom: '1px solid rgba(14, 10, 10, 1)',
-          }} 
-        />
-        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)' }}>
+        <div style={{
+          fontSize: '24px',
+          fontWeight: 'bold',
+          marginBottom: '15px',
+          paddingBottom: '15px',
+          borderBottom: '2px solid #000',
+          letterSpacing: '2px'
+        }}>
+          CLARITY
+        </div>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)', paddingBottom: '10px' }}>
           2036 Option 3 - {timePeriod} Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
