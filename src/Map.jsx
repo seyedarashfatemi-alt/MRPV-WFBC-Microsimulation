@@ -29,8 +29,22 @@ const ProjectsMap = () => {
     mapRef.current = map;
 
     map.on('load', async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      setMapLoaded(true);
+    });
+
+    return () => map.remove();
+  }, []); // Only run once on mount
+
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+    
+    const map = mapRef.current;
+    
+    // Clear existing data
+    setSelectedMovements([]);
+    setSelectedTimeInt('all');
+    
+    const loadData = async () => {
       try {
 
         const resLinks = await fetch('data/Links_Opt3.geojson');
