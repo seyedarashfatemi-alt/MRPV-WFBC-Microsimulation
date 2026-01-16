@@ -379,7 +379,7 @@ const ProjectsMap = () => {
           layout: {
             'symbol-placement': 'line-center',
             'text-field': ['to-string', ['get', 'VEHS']],
-            'text-size': 11,
+            'text-size': 14,
             'text-anchor': 'center',
             'text-allow-overlap': true,
           },
