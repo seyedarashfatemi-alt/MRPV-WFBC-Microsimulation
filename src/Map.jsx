@@ -31,22 +31,28 @@ const ProjectsMap = () => {
 
     mapRef.current = map;
 
-    map.on('styledata', () => {
-      if (baseMapLayersRef.current.length === 0) {
-        const existingLayers = map.getStyle().layers;
-        baseMapLayersRef.current = existingLayers.map(layer => layer.id);
-        console.log('Base map layers captured on styledata:', baseMapLayersRef.current.length);
+    map.once('style.load', () => {
+      try {
+        const style = map.getStyle();
+        if (style && style.layers && baseMapLayersRef.current.length === 0) {
+          baseMapLayersRef.current = style.layers.map(layer => layer.id);
+          console.log('Base map layers captured:', baseMapLayersRef.current.length);
+        }
+      } catch (error) {
+        console.warn('Could not capture base layers:', error);
       }
     });
 
     map.on('load', async () => {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       try {
         if (baseMapLayersRef.current.length === 0) {
-          const existingLayers = map.getStyle().layers;
-          baseMapLayersRef.current = existingLayers.map(layer => layer.id);
-          console.log('Base map layers stored on load:', baseMapLayersRef.current.length);
+          const style = map.getStyle();
+          if (style && style.layers) {
+            baseMapLayersRef.current = style.layers.map(layer => layer.id);
+            console.log('Base map layers stored on load:', baseMapLayersRef.current.length);
+          }
         }
 
         const resLinks = await fetch('data/Links_Opt3.geojson');
@@ -917,8 +923,12 @@ const ProjectsMap = () => {
         zIndex: 1
       }}>
         <img 
-          src="data/Clarity_Logo_black.png" 
+          src="/data/Clarity_Logo_black.png" 
           alt="Clarity Logo" 
+          onError={(e) => {
+            console.log('Logo failed to load, hiding image');
+            e.target.style.display = 'none';
+          }}
           style={{ 
             width: '100%', 
             maxWidth: '200px', 
@@ -1158,4 +1168,3 @@ const ProjectsMap = () => {
 };
 
 export default ProjectsMap;
-
