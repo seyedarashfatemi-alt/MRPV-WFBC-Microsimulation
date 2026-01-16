@@ -12,6 +12,7 @@ const ProjectsMap = () => {
   const [allMovements, setAllMovements] = useState(null);
   const [timeIntervals, setTimeIntervals] = useState([]);
   const [selectedTimeInt, setSelectedTimeInt] = useState('all');
+  const [showMap, setShowMap] = useState(true);
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -22,13 +23,12 @@ const ProjectsMap = () => {
     });
 
     mapRef.current = map;
-// add data and layers
+
     map.on('load', async () => {
       try {
         // 1️⃣ Load Links GeoJSON
-        const resLinks = await fetch('data/Links_Opt3.geojson');
+        const resLinks = await fetch('/data/Links_Opt3.geojson');
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
-
         const linksData = await resLinks.json();
         setLinksGeoJSON(linksData);
 
@@ -45,7 +45,7 @@ const ProjectsMap = () => {
         });
 
         // 2️⃣ Load Node_AM.txt movements
-        const resMov = await fetch('data/Node_AM.txt');
+        const resMov = await fetch('/data/Node_AM.txt');
         if (!resMov.ok) throw new Error('Node_AM.txt not found');
         const text = await resMov.text();
         const rows = text.split('\n').slice(1); // skip header
@@ -312,7 +312,7 @@ const ProjectsMap = () => {
           for (const type of arrowTypes) {
             try {
               // Fetch the SVG file from the public folder
-              const response = await fetch(`arrows/arrow-${type}.svg`);
+              const response = await fetch(`/arrows/arrow-${type}.svg`);
               if (!response.ok) {
                 console.warn(`Could not load arrow-${type}.svg, using fallback`);
                 continue;
@@ -399,6 +399,29 @@ const ProjectsMap = () => {
     return () => map.remove();
   }, []);
 
+  // Toggle base map visibility
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    
+    // Get all layer IDs from the style
+    const style = map.getStyle();
+    if (!style || !style.layers) return;
+    
+    // Toggle visibility of all base map layers except our custom layers
+    style.layers.forEach(layer => {
+      // Skip our custom layers (links and movements)
+      if (layer.id.startsWith('links') || layer.id.startsWith('movement')) {
+        return;
+      }
+      
+      // Toggle base map layers
+      if (map.getLayer(layer.id)) {
+        map.setLayoutProperty(layer.id, 'visibility', showMap ? 'visible' : 'none');
+      }
+    });
+  }, [showMap]);
+
   // Filter movements when time interval changes
   useEffect(() => {
     if (!mapRef.current || !allMovements) return;
@@ -447,23 +470,18 @@ const ProjectsMap = () => {
         zIndex: 1
       }}>
         <img 
-          src="data/Clarity_Logo_black.png" 
+          src="/data/Clarity_Logo.png" 
           alt="Clarity Logo" 
           style={{ 
             width: '100%', 
             maxWidth: '200px', 
             marginBottom: '15px',
-            display: 'block',
-            borderBottom: '1px solid rgba(14, 10, 10, 1)',
+            display: 'block'
           }} 
         />
-        <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' ,borderBottom: '1px solid rgba(14, 10, 10, 1)'}}>
-          2036 Option 3 - Hourly Demand
-        </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
-          Time Intervals
+          Time Interval
         </h3>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button
             onClick={() => setSelectedTimeInt('all')}
