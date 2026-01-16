@@ -40,17 +40,38 @@ const ProjectsMap = () => {
     
     const map = mapRef.current;
     
+    // Wait for style to be fully loaded
+    if (!map.isStyleLoaded()) {
+      const waitForStyle = () => {
+        if (map.isStyleLoaded()) {
+          loadData();
+        } else {
+          setTimeout(waitForStyle, 100);
+        }
+      };
+      waitForStyle();
+      return;
+    }
+    
     setSelectedMovements([]);
     setSelectedTimeInt('all');
     
     const loadData = async () => {
       try {
-        if (map.getLayer('movement-labels')) map.removeLayer('movement-labels');
-        if (map.getLayer('movement-arrowheads')) map.removeLayer('movement-arrowheads');
-        if (map.getLayer('movement-lines')) map.removeLayer('movement-lines');
-        if (map.getLayer('links-line')) map.removeLayer('links-line');
-        if (map.getSource('movements')) map.removeSource('movements');
-        if (map.getSource('links')) map.removeSource('links');
+        // Safely remove existing layers and sources
+        const layersToRemove = ['movement-labels', 'movement-arrowheads', 'movement-lines', 'links-line'];
+        layersToRemove.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            map.removeLayer(layerId);
+          }
+        });
+        
+        const sourcesToRemove = ['movements', 'links'];
+        sourcesToRemove.forEach(sourceId => {
+          if (map.getSource(sourceId)) {
+            map.removeSource(sourceId);
+          }
+        });
 
         const resLinks = await fetch('data/Links_Opt3.geojson');
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
@@ -478,7 +499,7 @@ const ProjectsMap = () => {
         }, 500);
         
       } catch (err) {
-        console.error(err);
+        console.error('Error loading data:', err);
       }
     };
     
@@ -486,9 +507,15 @@ const ProjectsMap = () => {
   }, [timePeriod, mapLoaded]);
 
   useEffect(() => {
-    if (!mapRef.current || !allMovements) return;
+    if (!mapRef.current || !allMovements || !mapLoaded) return;
 
     const map = mapRef.current;
+    
+    // Ensure style is loaded before accessing source
+    if (!map.isStyleLoaded()) {
+      return;
+    }
+    
     const source = map.getSource('movements');
     if (!source) return;
 
@@ -561,7 +588,7 @@ const ProjectsMap = () => {
         }
       });
     }
-  }, [selectedTimeInt, allMovements]);
+  }, [selectedTimeInt, allMovements, mapLoaded]);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
