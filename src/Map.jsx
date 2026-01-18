@@ -26,6 +26,7 @@ const ProjectsMap = () => {
       style: 'mapbox://styles/arashcc/cmhjx3one00fj01si1cik0fas',
       center: [144.65, -37.74],
       zoom: 12,
+      attributionControl: false, // Disable attribution control (bottom-right)
     });
 
     mapRef.current = map;
@@ -363,69 +364,71 @@ const ProjectsMap = () => {
           },
         });
 
-        const loadArrowImages = async () => {
-          const arrowTypes = ['left', 'through', 'right', 'uturn'];
-          
-          for (const type of arrowTypes) {
-            try {
-              if (map.hasImage(`arrow-${type}`)) continue;
-              
-              const response = await fetch(`${BASE_URL}arrows/_arrow-${type}.svg`);
-              if (!response.ok) {
-                console.warn(`Could not load arrow-${type}.svg, using fallback`);
-                continue;
-              }
-              const svgText = await response.text();
-              
-              const img = new Image(32, 32);
-              await new Promise((resolve, reject) => {
-                img.onload = () => {
-                  map.addImage(`arrow-${type}`, img);
-                  resolve();
-                };
-                img.onerror = () => {
-                  console.error(`Failed to load arrow-${type}`);
-                  reject();
-                };
-                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
-              });
-            } catch (error) {
-              console.error(`Error loading arrow-${type}:`, error);
-            }
-          }
-          console.log('✅ All arrow images loaded');
-        };
+        // Commented out arrow loading
+        // const loadArrowImages = async () => {
+        //   const arrowTypes = ['left', 'through', 'right', 'uturn'];
+        //   
+        //   for (const type of arrowTypes) {
+        //     try {
+        //       if (map.hasImage(`arrow-${type}`)) continue;
+        //       
+        //       const response = await fetch(`${BASE_URL}arrows/_arrow-${type}.svg`);
+        //       if (!response.ok) {
+        //         console.warn(`Could not load arrow-${type}.svg, using fallback`);
+        //         continue;
+        //       }
+        //       const svgText = await response.text();
+        //       
+        //       const img = new Image(32, 32);
+        //       await new Promise((resolve, reject) => {
+        //         img.onload = () => {
+        //           map.addImage(`arrow-${type}`, img);
+        //           resolve();
+        //         };
+        //         img.onerror = () => {
+        //           console.error(`Failed to load arrow-${type}`);
+        //           reject();
+        //         };
+        //         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+        //       });
+        //     } catch (error) {
+        //       console.error(`Error loading arrow-${type}:`, error);
+        //     }
+        //   }
+        //   console.log('✅ All arrow images loaded');
+        // };
 
-        await loadArrowImages();
+        // await loadArrowImages();
         
-        map.addLayer({
-          id: 'movement-arrowheads',
-          type: 'symbol',
-          source: 'movements',
-          layout: {
-            'symbol-placement': 'line-center',
-            'icon-image': [
-              'match',
-              ['get', 'TURNTYPE'],
-              'left', 'arrow-left',
-              'right', 'arrow-right',
-              'uturn', 'arrow-uturn',
-              'arrow-through'
-            ],
-            'icon-size': [
-              'interpolate',
-              ['linear'],
-              ['get', 'VEHS'],
-              0, 0.7,
-              500, 0.9,
-              1000, 1.1,
-              2000, 1.3
-            ],
-            'icon-allow-overlap': true,
-            'icon-rotation-alignment': 'map',
-            'icon-pitch-alignment': 'viewport',
-          },
-        });
+        // Commented out movement-arrowheads layer
+        // map.addLayer({
+        //   id: 'movement-arrowheads',
+        //   type: 'symbol',
+        //   source: 'movements',
+        //   layout: {
+        //     'symbol-placement': 'line-center',
+        //     'icon-image': [
+        //       'match',
+        //       ['get', 'TURNTYPE'],
+        //       'left', 'arrow-left',
+        //       'right', 'arrow-right',
+        //       'uturn', 'arrow-uturn',
+        //       'arrow-through'
+        //     ],
+        //     'icon-size': [
+        //       'interpolate',
+        //       ['linear'],
+        //       ['get', 'VEHS'],
+        //       0, 0.7,
+        //       500, 0.9,
+        //       1000, 1.1,
+        //       2000, 1.3
+        //     ],
+        //     'icon-allow-overlap': true,
+        //     'icon-rotation-alignment': 'map',
+        //     'icon-pitch-alignment': 'viewport',
+        //   },
+        // });
         
         map.addLayer({
           id: 'movement-labels',
@@ -445,7 +448,7 @@ const ProjectsMap = () => {
           },
         });
         
-        console.log('✅ Movement arrows and labels added');
+        console.log('✅ Movement labels added');
         
         setTimeout(() => {
           if (map.getLayer('movement-labels')) {
@@ -727,14 +730,13 @@ const ProjectsMap = () => {
         zIndex: 1
       }}>
         <div style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
+          fontSize: '16px',
           marginBottom: '15px',
           paddingBottom: '15px',
           borderBottom: '2px solid #000',
           letterSpacing: '2px'
         }}>
-          CLARITY
+ Western Freeway Bussiness Case
         </div>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)', paddingBottom: '10px' }}>
           2036 Option 3 - {timePeriod} Hourly Demand
