@@ -30,9 +30,19 @@ const ProjectsMap = () => {
 
     mapRef.current = map;
 
-    map.on('load', () => {
-      setMapLoaded(true);
-    });
+    // Wait for style to be fully loaded before setting mapLoaded
+    const handleStyleLoad = () => {
+      map.once('idle', () => {
+        setMapLoaded(true);
+      });
+    };
+
+    // Check if style is already loaded or wait for it
+    if (map.isStyleLoaded()) {
+      handleStyleLoad();
+    } else {
+      map.once('style.load', handleStyleLoad);
+    }
 
     return () => map.remove();
   }, []);
@@ -75,7 +85,7 @@ const ProjectsMap = () => {
           }
         });
 
-        const resLinks = await fetch('data/Links_Opt3.geojson');
+        const resLinks = await fetch(`${BASE_URL}data/Links_Opt3.geojson`);
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
 
         const linksData = await resLinks.json();
@@ -92,7 +102,7 @@ const ProjectsMap = () => {
           },
         });
 
-        const fileName = timePeriod === 'AM' ? 'data/Node_AM.txt' : 'data/Node_PM.txt';
+        const fileName = timePeriod === 'AM' ? `${BASE_URL}data/Node_AM.txt` : `${BASE_URL}data/Node_PM.txt`;
         const resMov = await fetch(fileName);
         if (!resMov.ok) throw new Error(`${fileName} not found`);
         const text = await resMov.text();
@@ -360,7 +370,7 @@ const ProjectsMap = () => {
             try {
               if (map.hasImage(`arrow-${type}`)) continue;
               
-              const response = await fetch(`arrows/arrow-${type}.svg`);
+              const response = await fetch(`${BASE_URL}arrows/_arrow-${type}.svg`);
               if (!response.ok) {
                 console.warn(`Could not load arrow-${type}.svg, using fallback`);
                 continue;
