@@ -5,6 +5,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 mapboxgl.accessToken = 'pk.eyJ1IjoiYXJhc2hjYyIsImEiOiJjbWhqeDFicjIxaHoyMmtxM3A1anphZG5vIn0.Hc43_oK4F3uS1k-LASpBMg';
 
 const ProjectsMap = () => {
+  console.log('🔄 ProjectsMap component rendering');
+  
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const customLayersDataRef = useRef({ links: null, movements: null });
@@ -16,27 +18,55 @@ const ProjectsMap = () => {
   const [mapReady, setMapReady] = useState(false);
   const [selectedMovements, setSelectedMovements] = useState([]);
   const [timePeriod, setTimePeriod] = useState('AM');
+  const [debugInfo, setDebugInfo] = useState('Initializing...');
 
+  // Map initialization effect
   useEffect(() => {
-    if (mapRef.current) return; // Prevent re-initialization
+    console.log('🗺️ Map initialization useEffect triggered');
+    
+    if (mapRef.current) {
+      console.log('⚠️ Map already exists, skipping initialization');
+      return;
+    }
 
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/arashcc/cmhjx3one00fj01si1cik0fas',
-      center: [144.65, -37.74],
-      zoom: 12,
-    });
+    try {
+      console.log('✨ Creating new Mapbox map instance');
+      setDebugInfo('Creating map...');
+      
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/arashcc/cmhjx3one00fj01si1cik0fas',
+        center: [144.65, -37.74],
+        zoom: 12,
+      });
 
-    mapRef.current = map;
+      mapRef.current = map;
+      console.log('✅ Map instance created and stored in ref');
+      setDebugInfo('Map created, waiting for load...');
 
-    map.once('load', () => {
-      // Wait a bit longer to ensure everything is ready
-      setTimeout(() => {
-        setMapReady(true);
-      }, 500);
-    });
+      map.once('load', () => {
+        console.log('🎉 Map "load" event fired');
+        setDebugInfo('Map loaded, waiting 500ms...');
+        
+        setTimeout(() => {
+          console.log('✅ Setting mapReady to true');
+          setMapReady(true);
+          setDebugInfo('Map ready!');
+        }, 500);
+      });
+
+      map.on('error', (e) => {
+        console.error('❌ Map error:', e);
+        setDebugInfo(`Map error: ${e.error?.message || 'Unknown error'}`);
+      });
+
+    } catch (error) {
+      console.error('❌ Error creating map:', error);
+      setDebugInfo(`Error creating map: ${error.message}`);
+    }
 
     return () => {
+      console.log('🧹 Cleanup: Removing map');
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -44,9 +74,24 @@ const ProjectsMap = () => {
     };
   }, []);
 
+  // Data loading effect
   useEffect(() => {
-    if (!mapRef.current || !mapReady) return;
-    if (hasLoadedData.current && timePeriod === (hasLoadedData.current.period)) return;
+    console.log(`📊 Data loading effect triggered - mapReady: ${mapReady}, timePeriod: ${timePeriod}`);
+    
+    if (!mapRef.current) {
+      console.log('⚠️ No map ref, skipping data load');
+      return;
+    }
+    
+    if (!mapReady) {
+      console.log('⚠️ Map not ready, skipping data load');
+      return;
+    }
+    
+    if (hasLoadedData.current && timePeriod === hasLoadedData.current.period) {
+      console.log('⚠️ Data already loaded for this period, skipping');
+      return;
+    }
 
     const map = mapRef.current;
     setSelectedMovements([]);
@@ -54,19 +99,45 @@ const ProjectsMap = () => {
 
     const loadData = async () => {
       try {
+        console.log('🔧 Starting data load process');
+        setDebugInfo(`Loading ${timePeriod} data...`);
+
         // Clean up existing layers/sources
+        console.log('🧹 Cleaning up existing layers and sources');
         ['movement-labels', 'movement-arrowheads', 'movement-lines', 'links-line'].forEach(id => {
-          if (map.getLayer(id)) map.removeLayer(id);
+          try {
+            if (map.getLayer(id)) {
+              console.log(`  Removing layer: ${id}`);
+              map.removeLayer(id);
+            }
+          } catch (e) {
+            console.warn(`  Could not remove layer ${id}:`, e.message);
+          }
         });
+        
         ['movements', 'links'].forEach(id => {
-          if (map.getSource(id)) map.removeSource(id);
+          try {
+            if (map.getSource(id)) {
+              console.log(`  Removing source: ${id}`);
+              map.removeSource(id);
+            }
+          } catch (e) {
+            console.warn(`  Could not remove source ${id}:`, e.message);
+          }
         });
 
+        console.log('📥 Fetching Links_Opt3.geojson');
+        setDebugInfo('Fetching links data...');
         const resLinks = await fetch('data/Links_Opt3.geojson');
-        if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
+        if (!resLinks.ok) {
+          console.error('❌ Links file not found');
+          throw new Error('Links_Opt3.geojson not found');
+        }
         const linksData = await resLinks.json();
+        console.log(`✅ Links loaded: ${linksData.features.length} features`);
         setLinksGeoJSON(linksData);
 
+        console.log('➕ Adding links source and layer');
         map.addSource('links', { type: 'geojson', data: linksData });
         map.addLayer({ 
           id: 'links-line', 
@@ -74,17 +145,27 @@ const ProjectsMap = () => {
           source: 'links', 
           paint: { 'line-color': 'rgba(0, 0, 0, 1)', 'line-width': 2 } 
         });
+        console.log('✅ Links layer added');
 
         const fileName = timePeriod === 'AM' ? 'data/Node_AM.txt' : 'data/Node_PM.txt';
+        console.log(`📥 Fetching ${fileName}`);
+        setDebugInfo(`Fetching ${fileName}...`);
+        
         const resMov = await fetch(fileName);
-        if (!resMov.ok) throw new Error(`${fileName} not found`);
+        if (!resMov.ok) {
+          console.error(`❌ ${fileName} not found`);
+          throw new Error(`${fileName} not found`);
+        }
         const text = await resMov.text();
         const rows = text.split('\n').slice(1).filter(row => row.trim() && !row.includes('TIMEINT'));
+        console.log(`✅ Loaded ${rows.length} movement rows`);
 
+        console.log('🔄 Processing movements...');
+        setDebugInfo('Processing movements...');
         const movementFeatures = [];
         const uniqueTimeIntervals = new Set();
 
-        rows.forEach(row => {
+        rows.forEach((row, index) => {
           if (!row.trim()) return;
           const cols = row.split('\t');
           if (cols[1]?.trim() === 'TIMEINT' || cols.length < 7) return;
@@ -165,6 +246,10 @@ const ProjectsMap = () => {
           });
         });
 
+        console.log(`✅ Created ${movementFeatures.length} movement features`);
+        console.log(`📊 Aggregating features...`);
+        setDebugInfo('Aggregating features...');
+
         const aggregatedMap = new Map();
         movementFeatures.forEach(feature => {
           const coords = feature.geometry.coordinates;
@@ -181,10 +266,13 @@ const ProjectsMap = () => {
         });
 
         const aggregatedFeatures = Array.from(aggregatedMap.values());
+        console.log(`✅ Aggregated to ${aggregatedFeatures.length} features`);
+        
         const movements = { type: 'FeatureCollection', features: [...movementFeatures, ...aggregatedFeatures] };
         setAllMovements(movements);
         customLayersDataRef.current = { links: linksData, movements: { type: 'FeatureCollection', features: aggregatedFeatures } };
 
+        console.log('🔄 Converting time intervals...');
         const convertSecondsToTimeLabel = (interval) => {
           const parts = interval.split('-');
           const startSec = parseInt(parts[0]);
@@ -211,8 +299,13 @@ const ProjectsMap = () => {
           .sort((a, b) => a.startSeconds - b.startSeconds);
 
         setTimeIntervals(intervalsWithLabels);
+        console.log(`✅ Created ${intervalsWithLabels.length} time intervals`);
 
+        console.log('➕ Adding movements source');
+        setDebugInfo('Adding map layers...');
         map.addSource('movements', { type: 'geojson', data: { type: 'FeatureCollection', features: aggregatedFeatures } });
+        
+        console.log('➕ Adding movement-lines layer');
         map.addLayer({
           id: 'movement-lines',
           type: 'line',
@@ -223,25 +316,44 @@ const ProjectsMap = () => {
           }
         });
 
+        console.log('📥 Loading arrow images...');
+        setDebugInfo('Loading arrow images...');
         const loadArrowImages = async () => {
           for (const type of ['left', 'through', 'right', 'uturn']) {
             try {
-              if (map.hasImage(`arrow-${type}`)) continue;
+              if (map.hasImage(`arrow-${type}`)) {
+                console.log(`  ✅ Arrow ${type} already loaded`);
+                continue;
+              }
+              
+              console.log(`  📥 Fetching arrow-${type}.svg`);
               const response = await fetch(`arrows/arrow-${type}.svg`);
-              if (!response.ok) continue;
+              if (!response.ok) {
+                console.warn(`  ⚠️ Could not load arrow-${type}.svg`);
+                continue;
+              }
               const svgText = await response.text();
+              
               const img = new Image(32, 32);
               await new Promise((resolve, reject) => {
-                img.onload = () => { map.addImage(`arrow-${type}`, img); resolve(); };
+                img.onload = () => { 
+                  map.addImage(`arrow-${type}`, img);
+                  console.log(`  ✅ Arrow ${type} loaded and added`);
+                  resolve(); 
+                };
                 img.onerror = reject;
                 img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
               });
-            } catch (error) { console.error(`Error loading arrow-${type}:`, error); }
+            } catch (error) { 
+              console.error(`  ❌ Error loading arrow-${type}:`, error);
+            }
           }
         };
         
         await loadArrowImages();
+        console.log('✅ All arrow images processed');
 
+        console.log('➕ Adding movement-arrowheads layer');
         map.addLayer({
           id: 'movement-arrowheads',
           type: 'symbol',
@@ -256,6 +368,7 @@ const ProjectsMap = () => {
           }
         });
 
+        console.log('➕ Adding movement-labels layer');
         map.addLayer({
           id: 'movement-labels',
           type: 'symbol',
@@ -274,12 +387,15 @@ const ProjectsMap = () => {
           }
         });
 
+        console.log('🖱️ Setting up click handlers (300ms delay)');
         setTimeout(() => {
+          console.log('🖱️ Attaching click handlers');
           map.off('click', 'movement-labels');
           map.off('mouseenter', 'movement-labels');
           map.off('mouseleave', 'movement-labels');
 
           map.on('click', 'movement-labels', (e) => {
+            console.log('🖱️ Label clicked', e.features[0]);
             if (e.features.length > 0) {
               const feature = e.features[0];
               const clickedCoords = feature.geometry.coordinates;
@@ -309,24 +425,40 @@ const ProjectsMap = () => {
 
           map.on('mouseenter', 'movement-labels', () => map.getCanvas().style.cursor = 'pointer');
           map.on('mouseleave', 'movement-labels', () => map.getCanvas().style.cursor = '');
+          console.log('✅ Click handlers attached');
         }, 300);
 
         hasLoadedData.current = { period: timePeriod };
+        console.log('🎉 Data loading complete!');
+        setDebugInfo('Data loaded successfully!');
+        
       } catch (err) {
-        console.error('Error loading data:', err);
+        console.error('❌ Error loading data:', err);
+        console.error('Stack trace:', err.stack);
+        setDebugInfo(`Error: ${err.message}`);
       }
     };
 
     loadData();
   }, [timePeriod, mapReady]);
 
+  // Filter effect
   useEffect(() => {
-    if (!mapRef.current || !allMovements || !mapReady) return;
+    console.log(`🔍 Filter effect triggered - selectedTimeInt: ${selectedTimeInt}`);
+    
+    if (!mapRef.current || !allMovements || !mapReady) {
+      console.log('⚠️ Skipping filter - missing dependencies');
+      return;
+    }
     
     const map = mapRef.current;
     const source = map.getSource('movements');
-    if (!source) return;
+    if (!source) {
+      console.log('⚠️ No movements source found');
+      return;
+    }
 
+    console.log(`🔄 Filtering movements to: ${selectedTimeInt}`);
     const filteredMovements = {
       type: 'FeatureCollection',
       features: allMovements.features.filter(f => 
@@ -334,6 +466,7 @@ const ProjectsMap = () => {
       )
     };
 
+    console.log(`✅ Filtered to ${filteredMovements.features.length} features`);
     source.setData(filteredMovements);
     customLayersDataRef.current.movements = filteredMovements;
 
@@ -370,6 +503,29 @@ const ProjectsMap = () => {
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+      
+      {/* Debug info overlay */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
+        background: 'rgba(0,0,0,0.8)',
+        color: 'white',
+        padding: '10px',
+        borderRadius: '4px',
+        fontSize: '12px',
+        maxWidth: '300px',
+        zIndex: 2000
+      }}>
+        <div><strong>Debug Info:</strong></div>
+        <div>Map Ready: {mapReady ? '✅' : '❌'}</div>
+        <div>Status: {debugInfo}</div>
+        <div>Time Period: {timePeriod}</div>
+        <div>Selected Interval: {selectedTimeInt}</div>
+        <div>Movements: {allMovements?.features?.length || 0}</div>
+        <div>Time Intervals: {timeIntervals.length}</div>
+      </div>
+
       <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 1 }}>
         <div style={{ background: 'white', padding: '12px 15px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
           <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>Peak Period</h3>
