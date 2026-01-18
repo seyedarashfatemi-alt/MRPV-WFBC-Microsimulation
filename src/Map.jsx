@@ -17,6 +17,8 @@ const ProjectsMap = () => {
   const [selectedMovements, setSelectedMovements] = useState([]);
   const [timePeriod, setTimePeriod] = useState('AM');
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const BASE_URL = import.meta.env.BASE_URL; // Add this line
+  
 
   useEffect(() => {
     const map = new mapboxgl.Map({
