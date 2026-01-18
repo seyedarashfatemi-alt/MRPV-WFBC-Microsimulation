@@ -5,7 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 mapboxgl.accessToken =
   'pk.eyJ1IjoiYXJhc2hjYyIsImEiOiJjbWhqeDFicjIxaHoyMmtxM3A1anphZG5vIn0.Hc43_oK4F3uS1k-LASpBMg';
 
-const ProjectsMap = () => {
+const ProjectsMap = ({ onLogout, userEmail }) => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const customLayersDataRef = useRef({ links: null, movements: null });
@@ -729,6 +729,33 @@ const ProjectsMap = () => {
         maxWidth: '300px',
         zIndex: 1
       }}>
+        {onLogout && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '10px',
+            paddingBottom: '10px',
+            borderBottom: '1px solid #e0e0e0'
+          }}>
+            <span style={{ fontSize: '12px', color: '#666' }}>{userEmail}</span>
+            <button
+              onClick={onLogout}
+              style={{
+                padding: '6px 12px',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '500'
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        )}
         <div style={{
           fontSize: '16px',
           marginBottom: '15px',
