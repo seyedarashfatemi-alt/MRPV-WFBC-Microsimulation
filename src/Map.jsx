@@ -8,45 +8,59 @@ const ProjectsMap = () => {
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
   const customLayersDataRef = useRef({ links: null, movements: null });
+  const hasLoadedData = useRef(false);
   const [linksGeoJSON, setLinksGeoJSON] = useState(null);
   const [allMovements, setAllMovements] = useState(null);
   const [timeIntervals, setTimeIntervals] = useState([]);
   const [selectedTimeInt, setSelectedTimeInt] = useState('all');
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [selectedMovements, setSelectedMovements] = useState([]);
   const [timePeriod, setTimePeriod] = useState('AM');
-  const [isLoadingData, setIsLoadingData] = useState(false);
 
   useEffect(() => {
+    if (mapRef.current) return; // Prevent re-initialization
+
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/arashcc/cmhjx3one00fj01si1cik0fas',
       center: [144.65, -37.74],
       zoom: 12,
     });
+
     mapRef.current = map;
-    map.on('load', () => setMapLoaded(true));
-    return () => map.remove();
+
+    map.once('load', () => {
+      // Wait a bit longer to ensure everything is ready
+      setTimeout(() => {
+        setMapReady(true);
+      }, 500);
+    });
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded) return;
+    if (!mapRef.current || !mapReady) return;
+    if (hasLoadedData.current && timePeriod === (hasLoadedData.current.period)) return;
+
     const map = mapRef.current;
     setSelectedMovements([]);
     setSelectedTimeInt('all');
-    
+
     const loadData = async () => {
-      await new Promise((resolve) => {
-        if (map.isStyleLoaded()) resolve();
-        else map.once('idle', resolve);
-      });
-      
       try {
-        setIsLoadingData(true);
-        const layersToRemove = ['movement-labels', 'movement-arrowheads', 'movement-lines', 'links-line'];
-        layersToRemove.forEach(layerId => { if (map.getLayer(layerId)) map.removeLayer(layerId); });
-        const sourcesToRemove = ['movements', 'links'];
-        sourcesToRemove.forEach(sourceId => { if (map.getSource(sourceId)) map.removeSource(sourceId); });
+        // Clean up existing layers/sources
+        ['movement-labels', 'movement-arrowheads', 'movement-lines', 'links-line'].forEach(id => {
+          if (map.getLayer(id)) map.removeLayer(id);
+        });
+        ['movements', 'links'].forEach(id => {
+          if (map.getSource(id)) map.removeSource(id);
+        });
 
         const resLinks = await fetch('data/Links_Opt3.geojson');
         if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
@@ -54,7 +68,12 @@ const ProjectsMap = () => {
         setLinksGeoJSON(linksData);
 
         map.addSource('links', { type: 'geojson', data: linksData });
-        map.addLayer({ id: 'links-line', type: 'line', source: 'links', paint: { 'line-color': 'rgba(0, 0, 0, 1)', 'line-width': 2 } });
+        map.addLayer({ 
+          id: 'links-line', 
+          type: 'line', 
+          source: 'links', 
+          paint: { 'line-color': 'rgba(0, 0, 0, 1)', 'line-width': 2 } 
+        });
 
         const fileName = timePeriod === 'AM' ? 'data/Node_AM.txt' : 'data/Node_PM.txt';
         const resMov = await fetch(fileName);
@@ -65,17 +84,17 @@ const ProjectsMap = () => {
         const movementFeatures = [];
         const uniqueTimeIntervals = new Set();
 
-        rows.forEach((row, index) => {
+        rows.forEach(row => {
           if (!row.trim()) return;
           const cols = row.split('\t');
-          if (cols[1] && cols[1].trim() === 'TIMEINT') return;
-          if (cols.length < 7) return;
+          if (cols[1]?.trim() === 'TIMEINT' || cols.length < 7) return;
 
           const timeInt = cols[1].trim();
           const fromLink = cols[3].trim();
           const toLink = cols[4].trim();
           const vehs = parseFloat(cols[5]) || 0;
           if (!timeInt.match(/^\d+-\d+$/)) return;
+
           uniqueTimeIntervals.add(timeInt);
 
           const fromFeature = linksData.features.find(f => String(f.properties['$LINK:NO']).trim() === fromLink);
@@ -83,20 +102,26 @@ const ProjectsMap = () => {
           if (!fromFeature || !toFeature) return;
 
           const fromCoords = fromFeature.geometry.coordinates;
-          const fromEnd = fromCoords[fromCoords.length - 1];
           const toCoords = toFeature.geometry.coordinates;
+          const fromEnd = fromCoords[fromCoords.length - 1];
           const toStart = toCoords[0];
 
-          const fromDir = fromCoords.length >= 2 ? { x: fromCoords[fromCoords.length - 1][0] - fromCoords[fromCoords.length - 2][0], y: fromCoords[fromCoords.length - 1][1] - fromCoords[fromCoords.length - 2][1] } : null;
-          const toDir = toCoords.length >= 2 ? { x: toCoords[1][0] - toCoords[0][0], y: toCoords[1][1] - toCoords[0][1] } : null;
+          const fromDir = fromCoords.length >= 2 ? {
+            x: fromCoords[fromCoords.length - 1][0] - fromCoords[fromCoords.length - 2][0],
+            y: fromCoords[fromCoords.length - 1][1] - fromCoords[fromCoords.length - 2][1]
+          } : null;
+
+          const toDir = toCoords.length >= 2 ? {
+            x: toCoords[1][0] - toCoords[0][0],
+            y: toCoords[1][1] - toCoords[0][1]
+          } : null;
 
           let turnType = 'through';
           if (fromDir && toDir) {
-            const fromAngle = Math.atan2(fromDir.y, fromDir.x);
-            const toAngle = Math.atan2(toDir.y, toDir.x);
-            let angleDiff = ((toAngle - fromAngle) * 180 / Math.PI);
+            let angleDiff = (Math.atan2(toDir.y, toDir.x) - Math.atan2(fromDir.y, fromDir.x)) * 180 / Math.PI;
             while (angleDiff > 180) angleDiff -= 360;
             while (angleDiff < -180) angleDiff += 360;
+            
             if (angleDiff >= -22.5 && angleDiff <= 22.5) turnType = 'through';
             else if (angleDiff > 22.5 && angleDiff <= 157.5) turnType = 'left';
             else if (angleDiff < -22.5 && angleDiff >= -157.5) turnType = 'right';
@@ -105,47 +130,67 @@ const ProjectsMap = () => {
 
           const createCurvedLine = (start, end, segments = 20) => {
             const coords = [];
-            const dx = end[0] - start[0], dy = end[1] - start[1];
+            const dx = end[0] - start[0];
+            const dy = end[1] - start[1];
             const distance = Math.sqrt(dx * dx + dy * dy);
+
             if (turnType === 'through') {
               for (let i = 0; i <= segments; i++) {
                 const t = i / segments;
                 coords.push([start[0] + t * dx, start[1] + t * dy]);
               }
             } else {
-              const midX = (start[0] + end[0]) / 2, midY = (start[1] + end[1]) / 2;
+              const midX = (start[0] + end[0]) / 2;
+              const midY = (start[1] + end[1]) / 2;
               let offset = distance * (turnType === 'uturn' ? 0.35 : 0.2);
               if (turnType === 'right') offset = -offset;
               const controlX = midX + (dy / distance) * offset;
               const controlY = midY - (dx / distance) * offset;
+              
               for (let i = 0; i <= segments; i++) {
                 const t = i / segments;
-                coords.push([(1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * controlX + t * t * end[0], (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * controlY + t * t * end[1]]);
+                coords.push([
+                  (1 - t) * (1 - t) * start[0] + 2 * (1 - t) * t * controlX + t * t * end[0],
+                  (1 - t) * (1 - t) * start[1] + 2 * (1 - t) * t * controlY + t * t * end[1]
+                ]);
               }
             }
             return coords;
           };
 
-          movementFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: createCurvedLine(fromEnd, toStart) }, properties: { VEHS: vehs, TIMEINT: timeInt, TURNTYPE: turnType } });
+          movementFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: createCurvedLine(fromEnd, toStart) },
+            properties: { VEHS: vehs, TIMEINT: timeInt, TURNTYPE: turnType }
+          });
         });
 
         const aggregatedMap = new Map();
         movementFeatures.forEach(feature => {
           const coords = feature.geometry.coordinates;
           const key = `${coords[0][0]},${coords[0][1]}-${coords[coords.length - 1][0]},${coords[coords.length - 1][1]}-${feature.properties.TURNTYPE}`;
-          if (aggregatedMap.has(key)) aggregatedMap.get(key).properties.VEHS += feature.properties.VEHS;
-          else aggregatedMap.set(key, { type: 'Feature', geometry: feature.geometry, properties: { VEHS: feature.properties.VEHS, TIMEINT: 'all', TURNTYPE: feature.properties.TURNTYPE } });
+          if (aggregatedMap.has(key)) {
+            aggregatedMap.get(key).properties.VEHS += feature.properties.VEHS;
+          } else {
+            aggregatedMap.set(key, {
+              type: 'Feature',
+              geometry: feature.geometry,
+              properties: { VEHS: feature.properties.VEHS, TIMEINT: 'all', TURNTYPE: feature.properties.TURNTYPE }
+            });
+          }
         });
-        
+
         const aggregatedFeatures = Array.from(aggregatedMap.values());
         const movements = { type: 'FeatureCollection', features: [...movementFeatures, ...aggregatedFeatures] };
         setAllMovements(movements);
         customLayersDataRef.current = { links: linksData, movements: { type: 'FeatureCollection', features: aggregatedFeatures } };
-        
+
         const convertSecondsToTimeLabel = (interval) => {
           const parts = interval.split('-');
-          const startSec = parseInt(parts[0]), endSec = parseInt(parts[1]);
+          const startSec = parseInt(parts[0]);
+          const endSec = parseInt(parts[1]);
           if (isNaN(startSec) || isNaN(endSec)) return interval;
+          
           const hourOffset = timePeriod === 'AM' ? 4 : 13;
           const formatHour = (hour) => {
             if (isNaN(hour)) return 'N/A';
@@ -156,12 +201,27 @@ const ProjectsMap = () => {
           };
           return `${formatHour((startSec / 3600) + hourOffset)}-${formatHour((endSec / 3600) + hourOffset)}`;
         };
-        
-        const intervalsWithLabels = Array.from(uniqueTimeIntervals).map(interval => ({ original: interval, display: convertSecondsToTimeLabel(interval), startSeconds: parseInt(interval.split('-')[0]) })).sort((a, b) => a.startSeconds - b.startSeconds);
+
+        const intervalsWithLabels = Array.from(uniqueTimeIntervals)
+          .map(interval => ({
+            original: interval,
+            display: convertSecondsToTimeLabel(interval),
+            startSeconds: parseInt(interval.split('-')[0])
+          }))
+          .sort((a, b) => a.startSeconds - b.startSeconds);
+
         setTimeIntervals(intervalsWithLabels);
 
         map.addSource('movements', { type: 'geojson', data: { type: 'FeatureCollection', features: aggregatedFeatures } });
-        map.addLayer({ id: 'movement-lines', type: 'line', source: 'movements', paint: { 'line-color': ['match', ['get', 'TURNTYPE'], 'left', 'rgba(0, 120, 255, 0.7)', 'right', 'rgba(255, 165, 0, 0.7)', 'uturn', 'rgba(200, 0, 200, 0)', 'rgba(0, 200, 0, 0.7)'], 'line-width': ['interpolate', ['linear'], ['get', 'VEHS'], 0, 2, 500, 4, 1000, 6, 2000, 8] } });
+        map.addLayer({
+          id: 'movement-lines',
+          type: 'line',
+          source: 'movements',
+          paint: {
+            'line-color': ['match', ['get', 'TURNTYPE'], 'left', 'rgba(0, 120, 255, 0.7)', 'right', 'rgba(255, 165, 0, 0.7)', 'uturn', 'rgba(200, 0, 200, 0)', 'rgba(0, 200, 0, 0.7)'],
+            'line-width': ['interpolate', ['linear'], ['get', 'VEHS'], 0, 2, 500, 4, 1000, 6, 2000, 8]
+          }
+        });
 
         const loadArrowImages = async () => {
           for (const type of ['left', 'through', 'right', 'uturn']) {
@@ -176,78 +236,136 @@ const ProjectsMap = () => {
                 img.onerror = reject;
                 img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
               });
-            } catch (error) { }
+            } catch (error) { console.error(`Error loading arrow-${type}:`, error); }
           }
         };
+        
         await loadArrowImages();
-        
-        map.addLayer({ id: 'movement-arrowheads', type: 'symbol', source: 'movements', layout: { 'symbol-placement': 'line-center', 'icon-image': ['match', ['get', 'TURNTYPE'], 'left', 'arrow-left', 'right', 'arrow-right', 'uturn', 'arrow-uturn', 'arrow-through'], 'icon-size': ['interpolate', ['linear'], ['get', 'VEHS'], 0, 0.7, 500, 0.9, 1000, 1.1, 2000, 1.3], 'icon-allow-overlap': true, 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'viewport' } });
-        map.addLayer({ id: 'movement-labels', type: 'symbol', source: 'movements', layout: { 'symbol-placement': 'line-center', 'text-field': ['to-string', ['get', 'VEHS']], 'text-size': 14, 'text-anchor': 'center', 'text-allow-overlap': true }, paint: { 'text-color': 'rgba(255, 255, 255, 1)', 'text-halo-color': 'rgba(0, 0, 0, 0.8)', 'text-halo-width': 2 } });
-        
-        setTimeout(() => {
-          if (map.getLayer('movement-labels')) {
-            map.off('click', 'movement-labels');
-            map.on('click', 'movement-labels', (e) => {
-              if (e.features.length > 0) {
-                const feature = e.features[0];
-                const clickedCoords = feature.geometry.coordinates;
-                const movementId = `${clickedCoords[0][0]},${clickedCoords[0][1]}-${clickedCoords[clickedCoords.length-1][0]},${clickedCoords[clickedCoords.length-1][1]}-${feature.properties.TURNTYPE}`;
-                setSelectedMovements(prev => {
-                  if (prev.find(m => m.id === movementId)) return prev.filter(m => m.id !== movementId);
-                  const matchingMovements = movements.features.filter(f => {
-                    const fCoords = f.geometry.coordinates;
-                    return Math.abs(fCoords[0][0] - clickedCoords[0][0]) < 0.00001 && Math.abs(fCoords[0][1] - clickedCoords[0][1]) < 0.00001 && Math.abs(fCoords[fCoords.length-1][0] - clickedCoords[clickedCoords.length-1][0]) < 0.00001 && Math.abs(fCoords[fCoords.length-1][1] - clickedCoords[clickedCoords.length-1][1]) < 0.00001 && f.properties.TURNTYPE === feature.properties.TURNTYPE && f.properties.TIMEINT !== 'all';
-                  });
-                  const timeData = matchingMovements.map(f => ({ timeInt: f.properties.TIMEINT, vehs: f.properties.VEHS, turnType: f.properties.TURNTYPE })).sort((a, b) => parseInt(a.timeInt.split('-')[0]) - parseInt(b.timeInt.split('-')[0]));
-                  return [...prev, { id: movementId, properties: feature.properties, timeData }];
-                });
-              }
-            });
-            map.on('mouseenter', 'movement-labels', () => map.getCanvas().style.cursor = 'pointer');
-            map.on('mouseleave', 'movement-labels', () => map.getCanvas().style.cursor = '');
-          }
-        }, 500);
-      } catch (err) {
-        console.error('Error loading data:', err);
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
-    loadData();
-  }, [timePeriod, mapLoaded]);
 
-  useEffect(() => {
-    if (!mapRef.current || !allMovements || !mapLoaded) return;
-    const map = mapRef.current;
-    const updateFilter = async () => {
-      await new Promise((resolve) => { if (map.isStyleLoaded()) resolve(); else map.once('idle', resolve); });
-      const source = map.getSource('movements');
-      if (!source) return;
-      const filteredMovements = { type: 'FeatureCollection', features: allMovements.features.filter(f => selectedTimeInt === 'all' ? f.properties.TIMEINT === 'all' : f.properties.TIMEINT === selectedTimeInt) };
-      source.setData(filteredMovements);
-      customLayersDataRef.current.movements = filteredMovements;
-      if (map.getLayer('movement-labels')) {
-        map.off('click', 'movement-labels');
-        map.on('click', 'movement-labels', (e) => {
-          if (e.features.length > 0) {
-            const feature = e.features[0];
-            const clickedCoords = feature.geometry.coordinates;
-            const movementId = `${clickedCoords[0][0]},${clickedCoords[0][1]}-${clickedCoords[clickedCoords.length-1][0]},${clickedCoords[clickedCoords.length-1][1]}-${feature.properties.TURNTYPE}`;
-            setSelectedMovements(prev => {
-              if (prev.find(m => m.id === movementId)) return prev.filter(m => m.id !== movementId);
-              const matchingMovements = allMovements.features.filter(f => {
-                const fCoords = f.geometry.coordinates;
-                return Math.abs(fCoords[0][0] - clickedCoords[0][0]) < 0.00001 && Math.abs(fCoords[0][1] - clickedCoords[0][1]) < 0.00001 && Math.abs(fCoords[fCoords.length-1][0] - clickedCoords[clickedCoords.length-1][0]) < 0.00001 && Math.abs(fCoords[fCoords.length-1][1] - clickedCoords[clickedCoords.length-1][1]) < 0.00001 && f.properties.TURNTYPE === feature.properties.TURNTYPE && f.properties.TIMEINT !== 'all';
-              });
-              const timeData = matchingMovements.map(f => ({ timeInt: f.properties.TIMEINT, vehs: f.properties.VEHS, turnType: f.properties.TURNTYPE })).sort((a, b) => parseInt(a.timeInt.split('-')[0]) - parseInt(b.timeInt.split('-')[0]));
-              return [...prev, { id: movementId, properties: feature.properties, timeData }];
-            });
+        map.addLayer({
+          id: 'movement-arrowheads',
+          type: 'symbol',
+          source: 'movements',
+          layout: {
+            'symbol-placement': 'line-center',
+            'icon-image': ['match', ['get', 'TURNTYPE'], 'left', 'arrow-left', 'right', 'arrow-right', 'uturn', 'arrow-uturn', 'arrow-through'],
+            'icon-size': ['interpolate', ['linear'], ['get', 'VEHS'], 0, 0.7, 500, 0.9, 1000, 1.1, 2000, 1.3],
+            'icon-allow-overlap': true,
+            'icon-rotation-alignment': 'map',
+            'icon-pitch-alignment': 'viewport'
           }
         });
+
+        map.addLayer({
+          id: 'movement-labels',
+          type: 'symbol',
+          source: 'movements',
+          layout: {
+            'symbol-placement': 'line-center',
+            'text-field': ['to-string', ['get', 'VEHS']],
+            'text-size': 14,
+            'text-anchor': 'center',
+            'text-allow-overlap': true
+          },
+          paint: {
+            'text-color': 'rgba(255, 255, 255, 1)',
+            'text-halo-color': 'rgba(0, 0, 0, 0.8)',
+            'text-halo-width': 2
+          }
+        });
+
+        setTimeout(() => {
+          map.off('click', 'movement-labels');
+          map.off('mouseenter', 'movement-labels');
+          map.off('mouseleave', 'movement-labels');
+
+          map.on('click', 'movement-labels', (e) => {
+            if (e.features.length > 0) {
+              const feature = e.features[0];
+              const clickedCoords = feature.geometry.coordinates;
+              const movementId = `${clickedCoords[0][0]},${clickedCoords[0][1]}-${clickedCoords[clickedCoords.length-1][0]},${clickedCoords[clickedCoords.length-1][1]}-${feature.properties.TURNTYPE}`;
+              
+              setSelectedMovements(prev => {
+                if (prev.find(m => m.id === movementId)) return prev.filter(m => m.id !== movementId);
+                
+                const matchingMovements = movements.features.filter(f => {
+                  const fCoords = f.geometry.coordinates;
+                  return Math.abs(fCoords[0][0] - clickedCoords[0][0]) < 0.00001 &&
+                         Math.abs(fCoords[0][1] - clickedCoords[0][1]) < 0.00001 &&
+                         Math.abs(fCoords[fCoords.length-1][0] - clickedCoords[clickedCoords.length-1][0]) < 0.00001 &&
+                         Math.abs(fCoords[fCoords.length-1][1] - clickedCoords[clickedCoords.length-1][1]) < 0.00001 &&
+                         f.properties.TURNTYPE === feature.properties.TURNTYPE &&
+                         f.properties.TIMEINT !== 'all';
+                });
+                
+                const timeData = matchingMovements
+                  .map(f => ({ timeInt: f.properties.TIMEINT, vehs: f.properties.VEHS, turnType: f.properties.TURNTYPE }))
+                  .sort((a, b) => parseInt(a.timeInt.split('-')[0]) - parseInt(b.timeInt.split('-')[0]));
+                
+                return [...prev, { id: movementId, properties: feature.properties, timeData }];
+              });
+            }
+          });
+
+          map.on('mouseenter', 'movement-labels', () => map.getCanvas().style.cursor = 'pointer');
+          map.on('mouseleave', 'movement-labels', () => map.getCanvas().style.cursor = '');
+        }, 300);
+
+        hasLoadedData.current = { period: timePeriod };
+      } catch (err) {
+        console.error('Error loading data:', err);
       }
     };
-    updateFilter();
-  }, [selectedTimeInt, allMovements, mapLoaded]);
+
+    loadData();
+  }, [timePeriod, mapReady]);
+
+  useEffect(() => {
+    if (!mapRef.current || !allMovements || !mapReady) return;
+    
+    const map = mapRef.current;
+    const source = map.getSource('movements');
+    if (!source) return;
+
+    const filteredMovements = {
+      type: 'FeatureCollection',
+      features: allMovements.features.filter(f => 
+        selectedTimeInt === 'all' ? f.properties.TIMEINT === 'all' : f.properties.TIMEINT === selectedTimeInt
+      )
+    };
+
+    source.setData(filteredMovements);
+    customLayersDataRef.current.movements = filteredMovements;
+
+    map.off('click', 'movement-labels');
+    map.on('click', 'movement-labels', (e) => {
+      if (e.features.length > 0) {
+        const feature = e.features[0];
+        const clickedCoords = feature.geometry.coordinates;
+        const movementId = `${clickedCoords[0][0]},${clickedCoords[0][1]}-${clickedCoords[clickedCoords.length-1][0]},${clickedCoords[clickedCoords.length-1][1]}-${feature.properties.TURNTYPE}`;
+        
+        setSelectedMovements(prev => {
+          if (prev.find(m => m.id === movementId)) return prev.filter(m => m.id !== movementId);
+          
+          const matchingMovements = allMovements.features.filter(f => {
+            const fCoords = f.geometry.coordinates;
+            return Math.abs(fCoords[0][0] - clickedCoords[0][0]) < 0.00001 &&
+                   Math.abs(fCoords[0][1] - clickedCoords[0][1]) < 0.00001 &&
+                   Math.abs(fCoords[fCoords.length-1][0] - clickedCoords[clickedCoords.length-1][0]) < 0.00001 &&
+                   Math.abs(fCoords[fCoords.length-1][1] - clickedCoords[clickedCoords.length-1][1]) < 0.00001 &&
+                   f.properties.TURNTYPE === feature.properties.TURNTYPE &&
+                   f.properties.TIMEINT !== 'all';
+          });
+          
+          const timeData = matchingMovements
+            .map(f => ({ timeInt: f.properties.TIMEINT, vehs: f.properties.VEHS, turnType: f.properties.TURNTYPE }))
+            .sort((a, b) => parseInt(a.timeInt.split('-')[0]) - parseInt(b.timeInt.split('-')[0]));
+          
+          return [...prev, { id: movementId, properties: feature.properties, timeData }];
+        });
+      }
+    });
+  }, [selectedTimeInt, allMovements, mapReady]);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
