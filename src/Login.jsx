@@ -7,6 +7,7 @@ const ALLOWED_EMAILS = [
   // Add your allowed email addresses here
 ];
 
+
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -51,6 +52,8 @@ const Login = ({ onLogin }) => {
       <div className="login-box">
         <div className="login-header">
           <h2>Western Freeway Business Case</h2>
+          <p>Microsimulation Modelling</p>
+
           <p>Please sign in to access the map</p>
         </div>
         

@@ -98,7 +98,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
           type: 'line',
           source: 'links',
           paint: {
-            'line-color': 'rgba(0, 0, 0, 1)',
+            'line-color': 'rgba(128, 128, 128, 0.75)',
             'line-width': 2,
           },
         });
