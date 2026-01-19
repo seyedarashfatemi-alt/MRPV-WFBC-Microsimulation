@@ -395,7 +395,6 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
         //       console.error(`Error loading arrow-${type}:`, error);
         //     }
         //   }
-        //   console.log('✅ All arrow images loaded');
         // };
 
         // await loadArrowImages();
