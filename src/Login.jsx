@@ -4,6 +4,7 @@ import './Login.css';
 const ALLOWED_EMAILS = [
   'arash@clarityconsult.com.au',
   'trent@clarityconsult.com.au',
+  'pedram@clarityconsult.com.au',
   // Add your allowed email addresses here
 ];
 
