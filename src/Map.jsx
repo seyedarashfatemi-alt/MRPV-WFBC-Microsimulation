@@ -551,7 +551,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
           const timeInt = cols[1].trim();
           const fromLink = cols[3].trim();
           const toLink = cols[4].trim();
-          const vehs = parseFloat(cols[5]) || 0;
+          const vehs = parseFloat(cols[5])*2 || 0;
           
           if (!timeInt.match(/^\d+-\d+$/)) {
             console.warn('Skipping invalid time interval format:', timeInt);
