@@ -5,6 +5,9 @@ const ALLOWED_EMAILS = [
   'arash@clarityconsult.com.au',
   'trent@clarityconsult.com.au',
   'pedram@clarityconsult.com.au',
+  'ash.bailey@vida.vic.gov.au',
+  'cameron.grant@vida.vic.gov.au',
+  'stephanie.liu@vida.vic.gov.au',
   // Add your allowed email addresses here
 ];
 
