@@ -20,7 +20,19 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
   const [timePeriod, setTimePeriod] = useState('AM');
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showColoredTurns, setShowColoredTurns] = useState(false); // Toggle for colored turn lines and labels
-  const BASE_URL = import.meta.env.BASE_URL; // Add this line
+  const [useBaseData, setUseBaseData] = useState(false); // Toggle: false = current (Opt3), true = Base files
+  const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/([^/])$/, '$1/');
+
+  // File paths based on Scenario toggle: 2036 Option 3 = Opt3 + Node_AM/PM; Base = Base + Node_AM_Base/Node_PM_Base
+  const linksFile = useBaseData
+    ? `${BASE_URL}data/Links_Base.geojson`
+    : `${BASE_URL}data/Links_Opt3.geojson`;
+  const nodeAMFile = useBaseData
+    ? `${BASE_URL}data/Node_AM_Base.txt`
+    : `${BASE_URL}data/Node_AM.txt`;
+  const nodePMFile = useBaseData
+    ? `${BASE_URL}data/Node_PM_Base.txt`
+    : `${BASE_URL}data/Node_PM.txt`;
 
   const clearNodeMarkers = () => {
     const count = nodeMarkersRef.current.length;
@@ -510,8 +522,8 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
           }
         });
 
-        const resLinks = await fetch(`${BASE_URL}data/Links_Opt3.geojson`);
-        if (!resLinks.ok) throw new Error('Links_Opt3.geojson not found');
+        const resLinks = await fetch(linksFile);
+        if (!resLinks.ok) throw new Error(linksFile.split('/').pop() + ' not found');
 
         const linksData = await resLinks.json();
         setLinksGeoJSON(linksData);
@@ -527,9 +539,9 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
           },
         });
 
-        const fileName = timePeriod === 'AM' ? `${BASE_URL}data/Node_AM.txt` : `${BASE_URL}data/Node_PM.txt`;
+        const fileName = timePeriod === 'AM' ? nodeAMFile : nodePMFile;
         const resMov = await fetch(fileName);
-        if (!resMov.ok) throw new Error(`${fileName} not found`);
+        if (!resMov.ok) throw new Error(fileName.split('/').pop() + ' not found');
         const text = await resMov.text();
         const allRows = text.split('\n');
         
@@ -1073,7 +1085,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
     };
     
     loadData();
-  }, [timePeriod, mapLoaded, showColoredTurns]);
+  }, [timePeriod, mapLoaded, showColoredTurns, useBaseData, linksFile, nodeAMFile, nodePMFile]);
 
   // Toggle colored turn lines + movement labels on/off
   useEffect(() => {
@@ -1191,6 +1203,57 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
         gap: '10px',
         zIndex: 1
       }}>
+        <div style={{
+          background: 'white',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+        }}>
+          <h3 style={{ 
+            margin: '0 0 10px 0', 
+            fontSize: '14px', 
+            fontWeight: 'bold',
+            color: '#333'
+          }}>
+            Scenario
+          </h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setUseBaseData(true)}
+              style={{
+                padding: '8px 16px',
+                background: useBaseData ? '#3b82f6' : 'white',
+                color: useBaseData ? 'white' : '#333',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: useBaseData ? 'bold' : 'normal',
+                transition: 'all 0.2s',
+                flex: 1
+              }}
+            >
+              Base
+            </button>
+            <button
+              onClick={() => setUseBaseData(false)}
+              style={{
+                padding: '8px 16px',
+                background: !useBaseData ? '#3b82f6' : 'white',
+                color: !useBaseData ? 'white' : '#333',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: !useBaseData ? 'bold' : 'normal',
+                transition: 'all 0.2s',
+                flex: 1
+              }}
+            >
+              2036 Option 3
+            </button>
+          </div>
+        </div>
         <div style={{
           background: 'white',
           padding: '12px 15px',
@@ -1329,7 +1392,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
  Western Freeway Bussiness Case
         </div>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)', paddingBottom: '10px' }}>
-          2036 Option 3 - {timePeriod} Hourly Demand
+          {useBaseData ? 'Base' : '2036 Option 3'} - {timePeriod} Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
           Time Intervals
