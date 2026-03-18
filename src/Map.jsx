@@ -20,19 +20,27 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
   const [timePeriod, setTimePeriod] = useState('AM');
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showColoredTurns, setShowColoredTurns] = useState(false); // Toggle for colored turn lines and labels
-  const [useBaseData, setUseBaseData] = useState(false); // Toggle: false = current (Opt3), true = Base files
   const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/([^/])$/, '$1/');
+  const [selectedScenario, setSelectedScenario] = useState('opt3');
 
-  // File paths based on Scenario toggle: 2036 Option 3 = Opt3 + Node_AM/PM; Base = Base + Node_AM_Base/Node_PM_Base
-  const linksFile = useBaseData
-    ? `${BASE_URL}data/Links_Base.geojson`
-    : `${BASE_URL}data/Links_Opt3.geojson`;
-  const nodeAMFile = useBaseData
-    ? `${BASE_URL}data/Node_AM_Base.txt`
-    : `${BASE_URL}data/Node_AM.txt`;
-  const nodePMFile = useBaseData
-    ? `${BASE_URL}data/Node_PM_Base.txt`
-    : `${BASE_URL}data/Node_PM.txt`;
+// Update file paths to handle three scenarios
+const linksFile = selectedScenario === 'base'
+  ? `${BASE_URL}data/Links_Base.geojson`
+  : selectedScenario === 'opt1'
+  ? `${BASE_URL}data/Links_Opt1.geojson`
+  : `${BASE_URL}data/Links_Opt3.geojson`;
+
+const nodeAMFile = selectedScenario === 'base'
+  ? `${BASE_URL}data/Node_AM_Base.txt`
+  : selectedScenario === 'opt1'
+  ? `${BASE_URL}data/Node_AM_Opt1.txt`
+  : `${BASE_URL}data/Node_AM.txt`;
+
+const nodePMFile = selectedScenario === 'base'
+  ? `${BASE_URL}data/Node_PM_Base.txt`
+  : selectedScenario === 'opt1'
+  ? `${BASE_URL}data/Node_PM_Opt1.txt`
+  : `${BASE_URL}data/Node_PM.txt`;
 
   const clearNodeMarkers = () => {
     const count = nodeMarkersRef.current.length;
@@ -1085,7 +1093,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
     };
     
     loadData();
-  }, [timePeriod, mapLoaded, showColoredTurns, useBaseData, linksFile, nodeAMFile, nodePMFile]);
+  }, [timePeriod, mapLoaded, showColoredTurns, selectedScenario, linksFile, nodeAMFile, nodePMFile]);
 
   // Toggle colored turn lines + movement labels on/off
   useEffect(() => {
@@ -1209,50 +1217,71 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
           borderRadius: '8px',
           boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
         }}>
-          <h3 style={{ 
-            margin: '0 0 10px 0', 
-            fontSize: '14px', 
-            fontWeight: 'bold',
-            color: '#333'
+          <div style={{
+            background: 'white',
+            padding: '12px 15px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
           }}>
-            Scenario
-          </h3>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setUseBaseData(true)}
-              style={{
-                padding: '8px 16px',
-                background: useBaseData ? '#3b82f6' : 'white',
-                color: useBaseData ? 'white' : '#333',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: useBaseData ? 'bold' : 'normal',
-                transition: 'all 0.2s',
-                flex: 1
-              }}
-            >
-              Base
-            </button>
-            <button
-              onClick={() => setUseBaseData(false)}
-              style={{
-                padding: '8px 16px',
-                background: !useBaseData ? '#3b82f6' : 'white',
-                color: !useBaseData ? 'white' : '#333',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: !useBaseData ? 'bold' : 'normal',
-                transition: 'all 0.2s',
-                flex: 1
-              }}
-            >
-              2036 Option 3
-            </button>
-          </div>
+            <h3 style={{ 
+              margin: '0 0 10px 0', 
+              fontSize: '14px', 
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              Scenario
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => setSelectedScenario('base')}
+                style={{
+                  padding: '8px 16px',
+                  background: selectedScenario === 'base' ? '#3b82f6' : 'white',
+                  color: selectedScenario === 'base' ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedScenario === 'base' ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Base
+              </button>
+              <button
+                onClick={() => setSelectedScenario('opt1')}
+                style={{
+                  padding: '8px 16px',
+                  background: selectedScenario === 'opt1' ? '#3b82f6' : 'white',
+                  color: selectedScenario === 'opt1' ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedScenario === 'opt1' ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                }}
+              >
+                2036 Option 1
+              </button>
+              <button
+                onClick={() => setSelectedScenario('opt3')}
+                style={{
+                  padding: '8px 16px',
+                  background: selectedScenario === 'opt3' ? '#3b82f6' : 'white',
+                  color: selectedScenario === 'opt3' ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedScenario === 'opt3' ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                }}
+              >
+                2036 Option 3
+              </button>
+            </div>
+          </div>          
         </div>
         <div style={{
           background: 'white',
@@ -1392,7 +1421,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
  Western Freeway Bussiness Case
         </div>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)', paddingBottom: '10px' }}>
-          {useBaseData ? 'Base' : '2036 Option 3'} - {timePeriod} Hourly Demand
+          {selectedScenario === 'base' ? 'Base' : selectedScenario === 'opt1' ? '2036 Option 1' : '2036 Option 3'} - {timePeriod} Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
           Time Intervals
