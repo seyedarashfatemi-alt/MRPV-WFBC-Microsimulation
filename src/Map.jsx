@@ -21,26 +21,38 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showColoredTurns, setShowColoredTurns] = useState(false); // Toggle for colored turn lines and labels
   const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/([^/])$/, '$1/');
-  const [selectedScenario, setSelectedScenario] = useState('opt3');
+  const [selectedScenario, setSelectedScenario] = useState('opt3a');
 
 // Update file paths to handle three scenarios
 const linksFile = selectedScenario === 'base'
   ? `${BASE_URL}data/Links_Base.geojson`
   : selectedScenario === 'opt1'
   ? `${BASE_URL}data/Links_Opt1.geojson`
-  : `${BASE_URL}data/Links_Opt3.geojson`;
+  : selectedScenario === 'opt3'
+  ? `${BASE_URL}data/Links_Opt3.geojson`
+  : selectedScenario === 'opt3a'
+  ? `${BASE_URL}data/Links_Opt3a.geojson`
+  : null;
 
 const nodeAMFile = selectedScenario === 'base'
   ? `${BASE_URL}data/Node_AM_Base.txt`
   : selectedScenario === 'opt1'
   ? `${BASE_URL}data/Node_AM_Opt1.txt`
-  : `${BASE_URL}data/Node_AM.txt`;
+  : selectedScenario === 'opt3'
+  ? `${BASE_URL}data/Node_AM_Opt3.txt`
+  : selectedScenario === 'opt3a'
+  ? `${BASE_URL}data/Node_AM_Opt3a.txt`
+  : null;
 
 const nodePMFile = selectedScenario === 'base'
   ? `${BASE_URL}data/Node_PM_Base.txt`
   : selectedScenario === 'opt1'
   ? `${BASE_URL}data/Node_PM_Opt1.txt`
-  : `${BASE_URL}data/Node_PM.txt`;
+  : selectedScenario === 'opt3'
+  ? `${BASE_URL}data/Node_PM_Opt3.txt`
+  : selectedScenario === 'opt3a'
+  ? `${BASE_URL}data/Node_PM_Opt3a.txt`
+  : null;
 
   const clearNodeMarkers = () => {
     const count = nodeMarkersRef.current.length;
@@ -1280,6 +1292,22 @@ const nodePMFile = selectedScenario === 'base'
               >
                 2036 Option 3
               </button>
+              <button
+                onClick={() => setSelectedScenario('opt3a')}
+                style={{
+                  padding: '8px 16px',
+                  background: selectedScenario === 'opt3a' ? '#3b82f6' : 'white',
+                  color: selectedScenario === 'opt3a' ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedScenario === 'opt3a' ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                }}
+              >
+                2036 Option 3a
+              </button>              
             </div>
           </div>          
         </div>
@@ -1421,7 +1449,7 @@ const nodePMFile = selectedScenario === 'base'
  Western Freeway Bussiness Case
         </div>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)', paddingBottom: '10px' }}>
-          {selectedScenario === 'base' ? 'Base' : selectedScenario === 'opt1' ? '2036 Option 1' : '2036 Option 3'} - {timePeriod} Hourly Demand
+          {selectedScenario === 'base' ? 'Base' : selectedScenario === 'opt1' ? '2036 Option 1': selectedScenario === 'opt3' ? '2036 Option 3' : selectedScenario === 'opt3a' ? '2036 Option 3a' : 'Unknown Scenario'} - {timePeriod} Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
           Time Intervals
