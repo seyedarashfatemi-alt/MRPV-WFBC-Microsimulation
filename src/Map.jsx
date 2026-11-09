@@ -32,6 +32,10 @@ const linksFile = selectedScenario === 'base'
   ? `${BASE_URL}data/Links_Opt3.geojson`
   : selectedScenario === 'opt3a'
   ? `${BASE_URL}data/Links_Opt3a.geojson`
+  : selectedScenario === 'opt3b'
+  ? `${BASE_URL}data/Links_Opt3b.geojson`
+  : selectedScenario === 'opt4a'
+  ? `${BASE_URL}data/Links_Opt4a.geojson`
   : null;
 
 const nodeAMFile = selectedScenario === 'base'
@@ -42,6 +46,10 @@ const nodeAMFile = selectedScenario === 'base'
   ? `${BASE_URL}data/Node_AM_Opt3.txt`
   : selectedScenario === 'opt3a'
   ? `${BASE_URL}data/Node_AM_Opt3a.txt`
+  : selectedScenario === 'opt3b'
+  ? `${BASE_URL}data/Node_AM_Opt3b.txt`
+  : selectedScenario === 'opt4a'
+  ? `${BASE_URL}data/Node_AM_Opt4a.txt`
   : null;
 
 const nodePMFile = selectedScenario === 'base'
@@ -52,6 +60,10 @@ const nodePMFile = selectedScenario === 'base'
   ? `${BASE_URL}data/Node_PM_Opt3.txt`
   : selectedScenario === 'opt3a'
   ? `${BASE_URL}data/Node_PM_Opt3a.txt`
+  : selectedScenario === 'opt3b'
+  ? `${BASE_URL}data/Node_PM_Opt3b.txt`
+  : selectedScenario === 'opt4a'
+  ? `${BASE_URL}data/Node_PM_Opt4a.txt`
   : null;
 
   const clearNodeMarkers = () => {
@@ -1307,7 +1319,39 @@ const nodePMFile = selectedScenario === 'base'
                 }}
               >
                 2036 Option 3a
-              </button>              
+              </button>      
+              <button
+                onClick={() => setSelectedScenario('opt3b')}
+                style={{
+                  padding: '8px 16px',
+                  background: selectedScenario === 'opt3b' ? '#3b82f6' : 'white',
+                  color: selectedScenario === 'opt3b' ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedScenario === 'opt3b' ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                }}
+              >
+                2036 Option 3b
+              </button>     
+              <button
+                onClick={() => setSelectedScenario('opt4a')}
+                style={{
+                  padding: '8px 16px',
+                  background: selectedScenario === 'opt4a' ? '#3b82f6' : 'white',
+                  color: selectedScenario === 'opt4a' ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedScenario === 'opt4a' ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                }}
+              >
+                2036 Option 4a
+              </button>          
             </div>
           </div>          
         </div>
@@ -1449,7 +1493,7 @@ const nodePMFile = selectedScenario === 'base'
  Western Freeway Bussiness Case
         </div>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', borderBottom: '1px solid rgba(14, 10, 10, 1)', paddingBottom: '10px' }}>
-          {selectedScenario === 'base' ? 'Base' : selectedScenario === 'opt1' ? '2036 Option 1': selectedScenario === 'opt3' ? '2036 Option 3' : selectedScenario === 'opt3a' ? '2036 Option 3a' : 'Unknown Scenario'} - {timePeriod} Hourly Demand
+          {selectedScenario === 'base' ? 'Base' : selectedScenario === 'opt1' ? '2036 Option 1': selectedScenario === 'opt3' ? '2036 Option 3' : selectedScenario === 'opt3a' ? '2036 Option 3a' : selectedScenario === 'opt3b' ? '2036 Option 3b' : selectedScenario === 'opt4a' ? '2036 Option 4a': 'Unknown Scenario'} - {timePeriod} Hourly Demand
         </h3>
         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
           Time Intervals
