@@ -21,7 +21,7 @@ const ProjectsMap = ({ onLogout, userEmail }) => {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showColoredTurns, setShowColoredTurns] = useState(false); // Toggle for colored turn lines and labels
   const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/([^/])$/, '$1/');
-  const [selectedScenario, setSelectedScenario] = useState('opt3a');
+  const [selectedScenario, setSelectedScenario] = useState('opt4a');
 
 // Update file paths to handle three scenarios
 const linksFile = selectedScenario === 'base'
