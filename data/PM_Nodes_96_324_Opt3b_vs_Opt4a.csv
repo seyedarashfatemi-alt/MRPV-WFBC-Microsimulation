@@ -1,0 +1,25 @@
+Node,From Link,To Link,Type,Name,Movement,Hour,Opt3b,Opt4a,Diff (4a-3b),% Change
+96,1904,147,Ramp,Christies,1904 -> 147 (Christies Ramp),2-3pm,485,536,51,10.5%
+96,1904,147,Ramp,Christies,1904 -> 147 (Christies Ramp),3-4pm,462,502,40,8.7%
+96,1904,147,Ramp,Christies,1904 -> 147 (Christies Ramp),4-5pm,422,461,39,9.2%
+96,1904,147,Ramp,Christies,1904 -> 147 (Christies Ramp),5-6pm,400,423,23,5.8%
+96,1904,147,Ramp,Christies,1904 -> 147 (Christies Ramp),6-7pm,343,377,34,9.9%
+96,1904,147,Ramp,Christies,1904 -> 147 (Christies Ramp),PM Total,2112,2299,187,8.9%
+96,24821,147,Freeway,,24821 -> 147 (Freeway),2-3pm,1451,1452,1,0.1%
+96,24821,147,Freeway,,24821 -> 147 (Freeway),3-4pm,1351,1357,6,0.4%
+96,24821,147,Freeway,,24821 -> 147 (Freeway),4-5pm,1359,1346,-13,-1.0%
+96,24821,147,Freeway,,24821 -> 147 (Freeway),5-6pm,1353,1371,18,1.3%
+96,24821,147,Freeway,,24821 -> 147 (Freeway),6-7pm,1122,1147,25,2.2%
+96,24821,147,Freeway,,24821 -> 147 (Freeway),PM Total,6636,6673,37,0.6%
+324,2478,2483,Freeway,,2478 -> 2483 (Freeway),2-3pm,1553,1597,44,2.8%
+324,2478,2483,Freeway,,2478 -> 2483 (Freeway),3-4pm,1474,1503,29,2.0%
+324,2478,2483,Freeway,,2478 -> 2483 (Freeway),4-5pm,1435,1459,24,1.7%
+324,2478,2483,Freeway,,2478 -> 2483 (Freeway),5-6pm,1432,1458,26,1.8%
+324,2478,2483,Freeway,,2478 -> 2483 (Freeway),6-7pm,1206,1252,46,3.8%
+324,2478,2483,Freeway,,2478 -> 2483 (Freeway),PM Total,7100,7269,169,2.4%
+324,2485,2483,Ramp,Robinsons,2485 -> 2483 (Robinsons Ramp),2-3pm,577,563,-14,-2.4%
+324,2485,2483,Ramp,Robinsons,2485 -> 2483 (Robinsons Ramp),3-4pm,576,559,-17,-3.0%
+324,2485,2483,Ramp,Robinsons,2485 -> 2483 (Robinsons Ramp),4-5pm,548,534,-14,-2.6%
+324,2485,2483,Ramp,Robinsons,2485 -> 2483 (Robinsons Ramp),5-6pm,473,460,-13,-2.7%
+324,2485,2483,Ramp,Robinsons,2485 -> 2483 (Robinsons Ramp),6-7pm,273,267,-6,-2.2%
+324,2485,2483,Ramp,Robinsons,2485 -> 2483 (Robinsons Ramp),PM Total,2447,2383,-64,-2.6%
